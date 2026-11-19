@@ -33,3 +33,5 @@ models/
 # IDE
 .idea/
 .vscode/
+
+tests/translation/results/
