@@ -1,14 +1,16 @@
 
 from datetime import datetime, timezone
 import logging
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from app.websocket import manager
-from pydantic import BaseModel
-from fastapi import HTTPException
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from app.websocket import manager
 from pydantic import BaseModel
 from app.translation import translation_service
 from app.language_manager import language_manager
+from app.database import init_database
+from app.history import router as history_router
+from app.conversation_settings import (router as conversation_settings_router)
+from fastapi import Depends
+from app.auth import ( router as auth_router, require_owner)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,6 +19,21 @@ app = FastAPI(
     description="Real-time multilingual communication platform",
     version="1.1.0"
 )
+
+init_database()
+
+app.include_router(auth_router)
+app.include_router(
+    history_router,
+    dependencies=[Depends(require_owner)]
+)
+
+app.include_router(
+    conversation_settings_router,
+    dependencies=[Depends(require_owner)]
+)
+# app.include_router(history_router)  
+# app.include_router(conversation_settings_router)
 
 
 @app.get("/")
