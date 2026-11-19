@@ -6,6 +6,14 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from app.websocket import manager
 
+from pydantic import BaseModel
+
+from fastapi import HTTPException
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+
+from pydantic import BaseModel
+
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
@@ -88,3 +96,42 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
     finally:
         manager.disconnect(user_id, websocket)
+
+
+
+
+class TranslationRequest(BaseModel):
+    text: str
+    target_language: str
+
+
+DEMO_TRANSLATIONS = {
+    ("안녕하세요.", "en"): "Hello.",
+    ("만나서 반갑습니다.", "en"): "Nice to meet you.",
+    ("오늘 기분이 어떻습니까?", "en"):
+        "How are you feeling today?",
+    ("Hello.", "ko"): "안녕하세요.",
+    ("Nice to meet you.", "ko"): "만나서 반갑습니다."
+}
+
+
+@app.post("/translate")
+async def translate(request: TranslationRequest):
+    text = request.text.strip()
+    target = request.target_language
+
+    if not text:
+        raise HTTPException(400, "Text is required.")
+
+    if target not in ("ko", "en"):
+        raise HTTPException(400, "Unsupported language.")
+
+    translated = DEMO_TRANSLATIONS.get((text, target))
+
+    return {
+        "original_text": text,
+        "translated_text": translated,
+        "target_language": target,
+        "engine": "demo",
+        "translation_success": translated is not None
+    }

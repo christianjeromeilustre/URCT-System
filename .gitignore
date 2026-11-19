@@ -1,0 +1,35 @@
+﻿# Python environments
+.venv/
+.venv*/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+credentials.json
+service-account*.json
+*.pem
+*.key
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# AI models
+models/
+.cache/
+*.pt
+*.pth
+*.safetensors
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/

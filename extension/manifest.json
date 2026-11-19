@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "URCT Translator",
+  "version": "0.1.0",
+  "description": "Universal Real-Time Chat Translator",
+  "action": {
+    "default_title": "URCT Translator",
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "http://127.0.0.1:8000/*"
+  ]
+}
