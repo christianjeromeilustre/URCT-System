@@ -135,3 +135,34 @@ async def translate(request: TranslationRequest):
         "engine": "demo",
         "translation_success": translated is not None
     }
+    
+    
+from app.language_manager import (
+    language_manager,
+    DEFAULT_SOURCE_LANGUAGE,
+    DEFAULT_TARGET_LANGUAGE
+)
+
+
+@app.get("/languages")
+async def get_languages():
+    return {
+        "source_language": DEFAULT_SOURCE_LANGUAGE,
+        "default_target_language": DEFAULT_TARGET_LANGUAGE,
+        "installed_languages": (
+            language_manager.get_installed_languages()
+        )
+    }
+
+
+@app.get("/languages/{code}")
+async def get_language(code: str):
+    language = language_manager.get_language(code)
+
+    if language is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Language module not installed"
+        )
+
+    return language
