@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
 from typing import Protocol
+from app.providers.opus_provider import OpusProvider
 
 
 # -----------------------------------------
@@ -109,4 +110,8 @@ class TranslationService:
 # -----------------------------------------
 
 translation_service = TranslationService()
+
 translation_service.register(DemoProvider())
+translation_service.register(OpusProvider())
+
+translation_service.active_provider = "opus"
