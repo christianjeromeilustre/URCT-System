@@ -1,18 +1,14 @@
 
 from datetime import datetime, timezone
 import logging
-
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-
 from app.websocket import manager
-
 from pydantic import BaseModel
-
 from fastapi import HTTPException
-
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-
 from pydantic import BaseModel
+from app.translation import translation_service
+from app.language_manager import language_manager
 
 logging.basicConfig(level=logging.INFO)
 
@@ -102,17 +98,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
 class TranslationRequest(BaseModel):
     text: str
-    target_language: str
+    target_language: str = "en"
+    source_language: str | None = None
 
-
-DEMO_TRANSLATIONS = {
-    ("안녕하세요.", "en"): "Hello.",
-    ("만나서 반갑습니다.", "en"): "Nice to meet you.",
-    ("오늘 기분이 어떻습니까?", "en"):
-        "How are you feeling today?",
-    ("Hello.", "ko"): "안녕하세요.",
-    ("Nice to meet you.", "ko"): "만나서 반갑습니다."
-}
 
 
 @app.post("/translate")
@@ -121,21 +109,39 @@ async def translate(request: TranslationRequest):
     target = request.target_language
 
     if not text:
-        raise HTTPException(400, "Text is required.")
+        raise HTTPException(
+            status_code=400,
+            detail="Text is required."
+        )
 
-    if target not in ("ko", "en"):
-        raise HTTPException(400, "Unsupported language.")
+    language = language_manager.get_language(target)
 
-    translated = DEMO_TRANSLATIONS.get((text, target))
+    if target != "ko" and language is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Target language module not installed."
+        )
 
-    return {
-        "original_text": text,
-        "translated_text": translated,
-        "target_language": target,
-        "engine": "demo",
-        "translation_success": translated is not None
-    }
-    
+    # Korean is the user's language.
+    # For the demo, reverse direction defaults to English.
+    source = request.source_language or (
+        "en" if target == "ko" else "ko"
+    )
+
+    if source not in ("ko", "en"):
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported demo source language."
+        )
+
+    result = await translation_service.translate(
+        text,
+        source,
+        target
+    )
+
+    return result.__dict__
+   
     
 from app.language_manager import (
     language_manager,
