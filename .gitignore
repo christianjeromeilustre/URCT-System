@@ -33,5 +33,19 @@ models/
 # IDE
 .idea/
 .vscode/
-
+# Generated benchmark results
 tests/translation/results/
+# URCT local database
+backend/data/
+
+# Authentication and local backups
+backups/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+.venv*/
