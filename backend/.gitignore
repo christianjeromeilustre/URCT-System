@@ -1,41 +1,45 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyd
+# Python environments
 .venv/
 .venv*/
 venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Secrets
 .env
 .env.*
 !.env.example
+credentials.json
+service-account*.json
+*.pem
+*.key
 
-# PyTorch and model files
+# AI models
+models/
+.cache/
 *.pt
 *.pth
 *.bin
 *.safetensors
-models/
-.cache/
 
-# Node.js
+# Frontend
 node_modules/
-frontend/dist/
-frontend/.vite/
+dist/
+.vite/
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 
 # Logs
 *.log
 logs/
 
+# Backups
+backups/
+
 # OS
 .DS_Store
 Thumbs.db
-
-# Secrets
-credentials.json
-service-account*.json
-*.pem
-*.key
