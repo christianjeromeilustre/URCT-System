@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "category": "daily",
+    "source_language": "ko",
+    "target_language": "en",
+    "text": "안녕하세요. 오늘 하루는 어땠어요?",
+    "reference": "Hello. How was your day today?"
+  },
+  {
+    "id": 2,
+    "category": "daily",
+    "source_language": "en",
+    "target_language": "ko",
+    "text": "I'm a little busy right now. Can we talk later?",
+    "reference": "지금은 조금 바빠요. 나중에 이야기할 수 있을까요?"
+  },
+  {
+    "id": 3,
+    "category": "technical",
+    "source_language": "ko",
+    "target_language": "en",
+    "text": "STM32에서 DMA 인터럽트가 발생하지 않습니다.",
+    "reference": "The DMA interrupt is not being triggered on the STM32."
+  },
+  {
+    "id": 4,
+    "category": "technical",
+    "source_language": "en",
+    "target_language": "ko",
+    "text": "The firmware crashes when the UART receive buffer overflows.",
+    "reference": "UART 수신 버퍼가 오버플로되면 펌웨어가 충돌합니다."
+  },
+  {
+    "id": 5,
+    "category": "humor",
+    "source_language": "ko",
+    "target_language": "en",
+    "text": "제 컴퓨터가 저보다 먼저 지쳐버렸네요.",
+    "reference": "Looks like my computer got tired before I did."
+  },
+  {
+    "id": 6,
+    "category": "idiom",
+    "source_language": "en",
+    "target_language": "ko",
+    "text": "Let's call it a day.",
+    "reference": "오늘은 여기까지 합시다."
+  }
+]
