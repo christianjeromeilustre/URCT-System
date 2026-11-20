@@ -14,6 +14,10 @@ from app.auth import ( router as auth_router, require_owner)
 from app.ws_auth import consume_ws_ticket
 from app.site_plugins import (router as site_router, initialize_site_plugins)
 from app.database import SessionLocal
+import asyncio
+from pydantic import ValidationError
+from app.auto_history import (router as auto_history_router, ArchiveRequest, archive_message)
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,6 +27,7 @@ app = FastAPI(
     version="1.1.0"
 )
 
+app.include_router(auto_history_router)
 init_database()
 with SessionLocal() as db:
     initialize_site_plugins(db)
@@ -92,6 +97,60 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 await websocket.send_json({
                     "type": "pong"
                 })
+                continue
+
+            
+            # ---------------------------------
+            # Automatic history archive event
+            # ---------------------------------
+
+            if data.get("type") == "archive_message":
+
+                # Only the authenticated local owner
+                # connection may archive messages.
+                if user_id != "owner":
+                    await websocket.send_json({
+                        "type": "archive_error",
+                        "message": "Not authorized."
+                    })
+                    continue
+
+                try:
+                    request = ArchiveRequest.model_validate(
+                        data
+                    )
+
+                    outcome = await asyncio.to_thread(
+                        archive_message,
+                        request
+                    )
+
+                    await websocket.send_json({
+                        "type": "archive_result",
+                        **outcome
+                    })
+
+                except ValidationError:
+                    await websocket.send_json({
+                        "type": "archive_error",
+                        "message": "Invalid archive request."
+                    })
+
+                except ValueError as exc:
+                    await websocket.send_json({
+                        "type": "archive_error",
+                        "message": str(exc)
+                    })
+
+                except Exception:
+                    logging.exception(
+                        "Failed to archive message"
+                    )
+                    await websocket.send_json({
+                        "type": "archive_error",
+                        "message": "Could not save message."
+                    })
+
                 continue
 
             receiver_id = data.get("receiver_id")
