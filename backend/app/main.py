@@ -12,6 +12,8 @@ from app.conversation_settings import (router as conversation_settings_router)
 from fastapi import Depends
 from app.auth import ( router as auth_router, require_owner)
 from app.ws_auth import consume_ws_ticket
+from app.site_plugins import (router as site_router, initialize_site_plugins)
+from app.database import SessionLocal
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,6 +24,10 @@ app = FastAPI(
 )
 
 init_database()
+with SessionLocal() as db:
+    initialize_site_plugins(db)
+
+app.include_router(site_router)
 
 app.include_router(auth_router)
 app.include_router(

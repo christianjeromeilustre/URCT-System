@@ -85,6 +85,18 @@ class Conversation(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
+    
+    
+    contact_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey(
+            "contacts.id",
+            ondelete="SET NULL"
+        ),
+        nullable=True,
+        index=True
+    )
+
 
     platform: Mapped[str] = mapped_column(
         String(100)

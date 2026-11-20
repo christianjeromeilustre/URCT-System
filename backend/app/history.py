@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import Conversation, Message, get_db
+from app.site_plugins import Contact
 
 
 router = APIRouter(
@@ -151,3 +152,84 @@ def delete_conversation(conversation_id: int, db: DB):
         "deleted": True,
         "conversation_id": conversation_id
     }
+    
+
+# -----------------------------------------
+# Contact -> Conversation integration
+# -----------------------------------------
+
+def get_contact_or_404(
+    contact_id: str,
+    db: DB
+):
+    contact = db.get(Contact, contact_id)
+
+    if contact is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact not found"
+        )
+
+    return contact
+
+
+@router.post(
+    "/contacts/{contact_id}/conversations",
+    status_code=201
+)
+def create_contact_conversation(
+    contact_id: str,
+    db: DB
+):
+    contact = get_contact_or_404(contact_id, db)
+
+    conversation = Conversation(
+        contact_id=contact.id,
+        platform=contact.site_id,
+        contact_name=contact.display_name,
+        language=contact.recipient_language,
+        mode=contact.mode
+    )
+
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
+
+    return {
+        "id": conversation.id,
+        "contact_id": conversation.contact_id,
+        "platform": conversation.platform,
+        "contact_name": conversation.contact_name,
+        "language": conversation.language,
+        "mode": conversation.mode
+    }
+
+
+@router.get(
+    "/contacts/{contact_id}/conversations"
+)
+def get_contact_conversations(
+    contact_id: str,
+    db: DB
+):
+    get_contact_or_404(contact_id, db)
+
+    conversations = db.scalars(
+        select(Conversation)
+        .where(
+            Conversation.contact_id == contact_id
+        )
+        .order_by(Conversation.id.desc())
+    ).all()
+
+    return [
+        {
+            "id": c.id,
+            "contact_id": c.contact_id,
+            "platform": c.platform,
+            "contact_name": c.contact_name,
+            "language": c.language,
+            "mode": c.mode
+        }
+        for c in conversations
+    ]
