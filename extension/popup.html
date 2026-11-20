@@ -38,9 +38,65 @@
     button:disabled { opacity: 0.55; }
     #copy { background: #334155; }
     #status { min-height: 18px; }
+
+    input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+}
+
+section {
+  margin-bottom: 15px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#login-status {
+  color: #b42318;
+}
+
+#account-panel {
+  padding: 10px;
+  border-radius: 7px;
+  background: #eaf2fb;
+}
   </style>
 </head>
 <body>
+  <section id="login-panel">
+    <h2>URCT Login</h2>
+
+    <label for="username">Username</label>
+    <input
+      id="username"
+      type="text"
+      value="owner"
+      autocomplete="username"
+    />
+
+    <label for="password">Password</label>
+    <input
+      id="password"
+      type="password"
+      autocomplete="current-password"
+      placeholder="URCT password"
+    />
+
+    <button id="login-btn">Login</button>
+
+    <p id="login-status"></p>
+  </section>
+
+<section id="account-panel" hidden>
+  <p id="account-name"></p>
+  <button id="logout-btn">Logout</button>
+  <p id="connection-status"></p>
+</section>
+<section id="translator-panel" hidden>
   <h2>URCT Translator</h2>
   <p>실시간 채팅 번역 · API 연결 테스트</p>
 
@@ -63,7 +119,8 @@
 
   <p id="status">서버 연결 대기 중</p>
   <p>현재 버전: DEMO · 실제 AI 모델 미연결</p>
-
+</section>
+  <script src="auth.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

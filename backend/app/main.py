@@ -74,6 +74,19 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     try:
         while True:
             data = await websocket.receive_json()
+            if not isinstance(data, dict):
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Invalid message format."
+                })
+                continue
+
+            # Keep the WebSocket connection alive.
+            if data.get("type") == "ping":
+                await websocket.send_json({
+                    "type": "pong"
+                })
+                continue
 
             receiver_id = data.get("receiver_id")
             message_text = data.get("message")

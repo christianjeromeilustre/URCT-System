@@ -1,13 +1,21 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "name": "URCT Translator",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Universal Real-Time Chat Translator",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "ws://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "URCT Translator",
     "default_popup": "popup.html"
-  },
-  "host_permissions": [
-    "http://127.0.0.1:8000/*"
-  ]
+  }
 }
