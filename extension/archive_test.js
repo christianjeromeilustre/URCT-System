@@ -23,7 +23,7 @@
 
     try {
       const response = await chrome.runtime.sendMessage({
-        type: "ARCHIVE_TEST",
+        type: "ARCHIVE_SELECTED_TEST",
         event_id: eventId
       });
 

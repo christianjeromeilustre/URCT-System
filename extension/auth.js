@@ -25,7 +25,14 @@
     }
 
     async function clearToken() {
-    await chrome.storage.session.remove("access_token");
+        await chrome.storage.session.remove
+        ([
+            "access_token"
+        ,
+            "urct_selected_contact"
+        ,
+            "archive_last_result"
+        ]);
     }
 
     function showLoggedOut() {
@@ -213,3 +220,152 @@
 
     verifySession();
 })();
+
+
+// ----------------------------------------
+// Contact-based archive test
+// ----------------------------------------
+
+async function getSelectedConversation() {
+  const saved = await chrome.storage.session.get(
+    "urct_selected_contact"
+  );
+
+  const contact = saved.urct_selected_contact;
+
+  if (!contact?.contact_id || !contact?.site_id) {
+    throw new Error("Select a contact first.");
+  }
+
+  const tokenData = await chrome.storage.session.get(
+    "access_token"
+  );
+
+  if (!tokenData.access_token) {
+    throw new Error("Login required.");
+  }
+
+  const headers = {
+    Authorization: `Bearer ${tokenData.access_token}`
+  };
+
+  const contactId = encodeURIComponent(
+    contact.contact_id
+  );
+
+  const url =
+    `${API_BASE}/history/contacts/` +
+    `${contactId}/conversations`;
+
+  const response = await fetch(url, { headers });
+
+  if (!response.ok) {
+    throw new Error(
+      `Conversation lookup failed: ${response.status}`
+    );
+  }
+
+  let conversations = await response.json();
+
+  // Use the most recent conversation,
+  // or create one if none exists.
+  if (conversations.length === 0) {
+    const createResponse = await fetch(url, {
+      method: "POST",
+      headers
+    });
+
+    if (!createResponse.ok) {
+      throw new Error(
+        `Conversation creation failed: ${createResponse.status}`
+      );
+    }
+
+    conversations = [await createResponse.json()];
+  }
+
+  return {
+    contact,
+    conversation: conversations[0]
+  };
+}
+
+
+async function sendSelectedArchiveTest(eventId) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket is not connected.");
+  }
+
+  const { contact, conversation } =
+    await getSelectedConversation();
+
+  // Confirm the socket is still connected after
+  // asynchronous API requests.
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket disconnected.");
+  }
+
+  const event = {
+    type: "archive_message",
+    event_id: eventId,
+    conversation_id: conversation.id,
+    contact_id: contact.contact_id,
+    direction: "incoming",
+    original_text:
+      "Hello! This message belongs to the selected contact.",
+    translated_text:
+      "안녕하세요! 이 메시지는 선택한 상대방의 기록입니다.",
+    source_language: "en",
+    target_language: "ko",
+    engine_name: "test"
+  };
+
+  socket.send(JSON.stringify(event));
+
+  return {
+    ok: true,
+    event_id: eventId,
+    contact_name: contact.display_name,
+    conversation_id: conversation.id
+  };
+}
+
+
+// Handle the new test request.
+// The existing ARCHIVE_TEST handler stays unchanged
+// until this version is verified.
+
+chrome.runtime.onMessage.addListener(
+  (message, sender, sendResponse) => {
+    if (message?.type !== "ARCHIVE_SELECTED_TEST") {
+      return;
+    }
+
+    const eventId = message.event_id;
+
+    if (
+      typeof eventId !== "string" ||
+      !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
+        eventId
+      )
+    ) {
+      sendResponse({
+        ok: false,
+        error: "Invalid event ID."
+      });
+      return;
+    }
+
+    sendSelectedArchiveTest(eventId)
+      .then(sendResponse)
+      .catch(error => {
+        sendResponse({
+          ok: false,
+          error: error.message
+        });
+      });
+
+    // Required for an asynchronous sendResponse.
+    return true;
+  }
+);

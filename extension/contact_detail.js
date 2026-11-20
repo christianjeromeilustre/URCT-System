@@ -67,6 +67,16 @@
 
       selectedContact = { siteId, contactId };
 
+
+      await chrome.storage.session.set({
+        urct_selected_contact: {
+          site_id: siteId,
+          contact_id: contactId,
+          display_name: contact.display_name
+        }
+      });
+
+
       title.textContent =
         `${contact.display_name} · ${siteId}`;
 
