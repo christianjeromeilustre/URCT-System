@@ -355,6 +355,39 @@
       </p>
     </section>
 
+
+    <section id="chat-message-panel">
+      <hr>
+
+      <h2>URCT ChatMessage</h2>
+      <p>Save a message to the selected contact.</p>
+
+      <label for="chat-direction">Direction</label>
+      <select id="chat-direction">
+        <option value="incoming">Incoming</option>
+        <option value="outgoing">Outgoing</option>
+      </select>
+
+      <label for="chat-original">Original Message</label>
+      <textarea
+        id="chat-original"
+        placeholder="Enter the original message..."
+      ></textarea>
+
+      <label for="chat-translated">Translated Message</label>
+      <textarea
+        id="chat-translated"
+        placeholder="Enter the translated message..."
+      ></textarea>
+
+      <button id="chat-save" type="button">
+        Save ChatMessage
+      </button>
+
+      <p id="chat-save-status">No message saved yet.</p>
+    </section>
+
+
   </section>
 
 
@@ -364,5 +397,6 @@
   <script src="contact_detail.js"></script>
   <script src="contact_tree.js"></script>
   <script src="archive_test.js"></script>
+  <script src="chat_message.js"></script>
 </body>
 </html>

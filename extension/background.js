@@ -346,3 +346,259 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
+
+async function getSelectedConversation() {
+  const data = await chrome.storage.session.get([
+    "access_token",
+    "urct_selected_contact"
+  ]);
+
+  const contact = data.urct_selected_contact;
+  const token = data.access_token;
+
+  if (!token) {
+    throw new Error("Login required");
+  }
+
+  if (!contact?.contact_id || !contact?.site_id) {
+    throw new Error("Select a contact first");
+  }
+
+  const url =
+    `${API_BASE}/history/contacts/` +
+    `${encodeURIComponent(contact.contact_id)}/conversations`;
+
+  const headers = {
+    Authorization: `Bearer ${token}`
+  };
+
+  const response = await fetch(url, { headers });
+
+  if (!response.ok) {
+    throw new Error(`History API: ${response.status}`);
+  }
+
+  let conversations = await response.json();
+
+  if (conversations.length === 0) {
+    const created = await fetch(url, {
+      method: "POST",
+      headers
+    });
+
+    if (!created.ok) {
+      throw new Error(
+        `Create conversation: ${created.status}`
+      );
+    }
+
+    conversations = [await created.json()];
+  }
+
+  const conversation = conversations[0];
+
+  if (conversation.contact_id !== contact.contact_id) {
+    throw new Error("Conversation contact mismatch");
+  }
+
+  return { contact, conversation };
+}
+
+
+async function sendSelectedArchiveTest(eventId) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket is not connected");
+  }
+
+  const { contact, conversation } =
+    await getSelectedConversation();
+
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket disconnected");
+  }
+
+  socket.send(JSON.stringify({
+    type: "archive_message",
+    event_id: eventId,
+    conversation_id: conversation.id,
+    contact_id: contact.contact_id,
+    direction: "incoming",
+    original_text:
+      "Hello! This message belongs to the selected contact.",
+    translated_text:
+      "안녕하세요! 이 메시지는 선택한 상대방의 기록입니다.",
+    source_language: "en",
+    target_language: "ko",
+    engine_name: "test"
+  }));
+
+  return {
+    ok: true,
+    event_id: eventId,
+    conversation_id: conversation.id
+  };
+}
+
+
+chrome.runtime.onMessage.addListener(
+  (message, sender, sendResponse) => {
+    if (message?.type !== "ARCHIVE_SELECTED_TEST") {
+      return;
+    }
+
+    const eventId = message.event_id;
+
+    const uuidPattern =
+      /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
+    if (
+      typeof eventId !== "string" ||
+      !uuidPattern.test(eventId)
+    ) {
+      sendResponse({
+        ok: false,
+        error: "Invalid event ID"
+      });
+      return;
+    }
+
+    sendSelectedArchiveTest(eventId)
+      .then(sendResponse)
+      .catch(error => {
+        sendResponse({
+          ok: false,
+          error: error.message
+        });
+      });
+
+    return true;
+  }
+);
+
+
+//
+// URCT Universal ChatMessage v0.1
+// This sends a history event, not a chat message
+// to an external website.
+//
+
+function validateChatMessage(data) {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid message.");
+  }
+
+  if (!["incoming", "outgoing"].includes(data.direction)) {
+    throw new Error("Invalid direction.");
+  }
+
+  if (
+    typeof data.original_text !== "string" ||
+    !data.original_text.trim() ||
+    data.original_text.length > 10000
+  ) {
+    throw new Error("Invalid original text.");
+  }
+
+  if (
+    typeof data.translated_text !== "string" ||
+    data.translated_text.length > 20000
+  ) {
+    throw new Error("Invalid translated text.");
+  }
+
+  if (
+    typeof data.event_id !== "string" ||
+    !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+      .test(data.event_id)
+  ) {
+    throw new Error("Invalid event ID.");
+  }
+}
+
+
+async function archiveChatMessage(data) {
+  validateChatMessage(data);
+
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket is not connected.");
+  }
+
+  const { contact, conversation } =
+    await getSelectedConversation();
+
+  const recipientLanguage =
+    conversation.language || "en";
+
+  const sourceLanguage = data.direction === "incoming"
+    ? recipientLanguage
+    : "ko";
+
+  const targetLanguage = data.direction === "incoming"
+    ? "ko"
+    : recipientLanguage;
+
+  const event = {
+    type: "archive_message",
+    event_id: data.event_id,
+
+    contact_id: contact.contact_id,
+    conversation_id: conversation.id,
+
+    direction: data.direction,
+
+    original_text: data.original_text.trim(),
+    translated_text: data.translated_text.trim(),
+
+    source_language: sourceLanguage,
+    target_language: targetLanguage,
+
+    engine_name: "manual"
+  };
+
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket disconnected.");
+  }
+
+  socket.send(JSON.stringify(event));
+
+  return {
+    ok: true,
+    event_id: event.event_id,
+    contact_name: contact.display_name,
+    conversation_id: conversation.id
+  };
+}
+
+
+// Popup sends a message to the background worker.
+
+chrome.runtime.onMessage.addListener(
+  (message, sender, sendResponse) => {
+    if (message?.type !== "ARCHIVE_CHAT_MESSAGE") {
+      return;
+    }
+
+    // Only accept this internal message from our extension.
+    if (sender.id !== chrome.runtime.id || sender.tab) {
+      sendResponse({
+        ok: false,
+        error: "Unauthorized message source."
+      });
+      return;
+    }
+
+    archiveChatMessage(message.payload)
+      .then(sendResponse)
+      .catch(error => {
+        sendResponse({
+          ok: false,
+          error: error.message
+        });
+      });
+
+    return true;
+  }
+);
+
+
+
