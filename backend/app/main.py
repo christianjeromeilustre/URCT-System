@@ -11,6 +11,7 @@ from app.history import router as history_router
 from app.conversation_settings import (router as conversation_settings_router)
 from fastapi import Depends
 from app.auth import ( router as auth_router, require_owner)
+from app.ws_auth import consume_ws_ticket
 
 logging.basicConfig(level=logging.INFO)
 
@@ -57,6 +58,17 @@ async def health():
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
+     # -------------------------------------
+    # Authenticate before accepting socket
+    # -------------------------------------
+
+    ticket = websocket.query_params.get("ticket", "")
+
+    if not consume_ws_ticket(ticket, user_id):
+        await websocket.close(code=1008)
+        return
+
+    # Existing connection manager
     await manager.connect(user_id, websocket)
 
     try:

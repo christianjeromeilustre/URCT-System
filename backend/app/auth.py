@@ -1,26 +1,18 @@
 import os
 import secrets
+import jwt
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated
-
-import jwt
-
 from dotenv import load_dotenv
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status
-)
-from fastapi.security import (
-    OAuth2PasswordBearer,
-    OAuth2PasswordRequestForm
-)
+from fastapi import (APIRouter, Depends, HTTPException, status)
+from fastapi.security import (OAuth2PasswordBearer, OAuth2PasswordRequestForm)
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from pydantic import BaseModel
+from app.ws_auth import (create_ws_ticket, TICKET_TTL_SECONDS)
+from pydantic import BaseModel, Field
 
 
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
@@ -164,4 +156,28 @@ def get_my_profile(
         "username": username,
         "role": "owner",
         "authenticated": True
+    }
+
+
+
+class WebSocketTicketRequest(BaseModel):
+    user_id: str = Field(
+        min_length=1,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9_-]+$"
+    )
+
+
+@router.post("/ws-ticket")
+def issue_websocket_ticket(
+    data: WebSocketTicketRequest,
+    username: Annotated[str, Depends(require_owner)]
+):
+    ticket = create_ws_ticket(data.user_id)
+
+    return {
+        "ticket": ticket,
+        "user_id": data.user_id,
+        "expires_in": TICKET_TTL_SECONDS,
+        "token_type": "websocket_ticket"
     }
