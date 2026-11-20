@@ -184,6 +184,34 @@
       display: none !important;
     }
 
+
+    #history-settings-panel {
+      margin-top: 16px;
+      padding: 12px;
+      background: #eaf2fb;
+      border-radius: 8px;
+    }
+
+    .history-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    #history-auto-save {
+      width: auto;
+      margin: 0;
+    }
+
+    #history-auto-save-status {
+      font-size: 12px;
+      color: #475467;
+      margin-top: 10px;
+    }
+
+
   </style>
 </head>
 <body>
@@ -388,6 +416,33 @@
     </section>
 
 
+    <section id="history-settings-panel">
+      <hr>
+
+      <h2>History Settings</h2>
+
+      <label class="history-toggle-label">
+        <input
+          id="history-auto-save"
+          type="checkbox"
+          disabled
+        >
+        Automatically save chat history
+      </label>
+
+      <p id="history-auto-save-status">
+        Loading settings...
+      </p>
+
+      <button
+        id="history-settings-refresh"
+        type="button"
+      >
+        Refresh Settings
+      </button>
+    </section>
+
+
   </section>
 
 
@@ -398,5 +453,6 @@
   <script src="contact_tree.js"></script>
   <script src="archive_test.js"></script>
   <script src="chat_message.js"></script>
+  <script src="history_settings.js"></script>
 </body>
 </html>

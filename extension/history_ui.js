@@ -304,6 +304,54 @@
     closeHistory
   );
 
+
+    // -----------------------------------------
+    // Refresh history when a new message is saved
+    // -----------------------------------------
+
+    window.addEventListener(
+        "urct:history-updated",
+        async () => {
+            if (panel.hidden || !currentContactId) {
+            return;
+            }
+
+            if (currentConversationId !== null) {
+            await loadMessages(currentConversationId);
+            } else {
+            await loadConversations();
+            }
+        }
+    );
+
+
+    chrome.storage.onChanged.addListener(
+    (changes, areaName) => {
+        if (
+        areaName !== "session" ||
+        !changes.archive_last_result
+        ) {
+        return;
+        }
+
+        const result =
+        changes.archive_last_result.newValue;
+
+        if (
+        result?.type !== "archive_result" ||
+        result.status !== "saved"
+        ) {
+        return;
+        }
+
+        window.dispatchEvent(
+        new Event("urct:history-updated")
+        );
+    }
+    );
+
+
+
   window.urctHistory = {
     openHistory,
     closeHistory
