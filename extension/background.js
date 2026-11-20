@@ -153,6 +153,19 @@ async function connectWebSocket() {
           return;
         }
 
+
+        if (
+          message.type === "archive_result" ||
+          message.type === "archive_error"
+        ) {
+          chrome.storage.session.set({
+            archive_last_result: message
+          });
+
+          return;
+        }
+
+
         // Message processing will be added later.
         console.log(
           "URCT WebSocket message type:",
@@ -286,3 +299,50 @@ chrome.runtime.onMessage.addListener(
     setStatus("disconnected");
   }
 })();
+
+
+function sendArchiveTest(eventId) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return {
+      ok: false,
+      error: "WebSocket is not connected"
+    };
+  }
+
+  socket.send(JSON.stringify({
+    type: "archive_message",
+    event_id: eventId,
+    conversation_id: 2,
+    contact_id: "f8d266c6-1113-4efb-8a56-e7ed9d5f1465",
+    direction: "incoming",
+    original_text: "Hello! This is a WebSocket history test.",
+    translated_text: "안녕하세요! WebSocket 대화 기록 테스트입니다.",
+    source_language: "en",
+    target_language: "ko",
+    engine_name: "test"
+  }));
+
+  return { ok: true, event_id: eventId };
+}
+
+chrome.runtime.onMessage.addListener(
+  (message, sender, sendResponse) => {
+    if (message.type === "ARCHIVE_TEST") {
+      const eventId = message.event_id;
+
+      if (
+        typeof eventId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)
+      ) {
+        sendResponse({
+          ok: false,
+          error: "Invalid event ID"
+        });
+        return;
+      }
+
+      sendResponse(sendArchiveTest(eventId));
+    }
+  }
+);
+
