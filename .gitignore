@@ -49,3 +49,4 @@ backups/
 # Python virtual environments
 .venv/
 .venv*/
+extension/*.broken.js
